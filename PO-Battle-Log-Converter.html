@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="UTF-8">
+  <title>PO战报转换 & 翻译工具</title>
+  <style>
+    main {
+      text-align  : center;
+      font-size   : 12px;
+      color       : #666;
+      line-height : 30px;
+    }
+
+    #input, #output {
+      width         : 980px;
+      height        : 200px;
+      padding       : 10px;
+      margin        : 10px;
+      border-radius : 5px;
+    }
+
+    #convert {
+      border        : 0;
+      text-align    : center;
+      padding       : 10px 20px 10px 20px;
+      cursor        : pointer;
+      font-size     : 14px;
+      font-weight   : bold;
+      color         : #666;
+      border-radius : 5px;
+    }
+  </style>
+</head>
+
+<body>
+
+<main>
+  <h1>PO战报格式化 & 翻译工具</h1>
+  <div>将你的战报打扮得漂漂亮亮的！</div>
+  <textarea id="input" placeholder="将要转换 & 翻译的战报粘贴在此处（也可以是PO自动生成的HTML格式战报）。"></textarea><br>
+  <textarea id="output" placeholder="经过转换 & 翻译的战报将会显示在这"></textarea><br>
+  <button id="convert">MAGIC!</button>
+</main>
+
+<script>
+  var $ = function (selector) {
+    return !selector ? document : document.querySelector(selector);
+  };
+  var translations = {
+    phases : [
+      ['( )*The foe', '对方'],
+      ['\'s', '的'],
+      ['lost (.+?) of its health', '损失了 $1 的HP'],
+      ['lost (\\d+) HP', '损失了 $1 HP'],
+      ['had its energy drained', '的HP被吸取了'],
+      ['has Mega Evolved into', '百万进化成了'],
+      ['Mega ', '百万'],
+      ['Start of turn (\\d+)', '第 $1 回合开始'],
+      ['It\'s not very effective...', '这不是很有效……'],
+      ['Tier', '级别'],
+      ['Variation', '修正'],
+      ['Rule', '规则'],
+      ['Rated', '计分'],
+      ['Unrated', '不计分'],
+      ['Mode', '模式'],
+      ['Singles', '单打'],
+      ['Doubles', '双打'],
+      ['Triples', '三打'],
+      ['Battle between', ''],
+      ['Battle between (.+?) and (.+?) started', '$1 与 $2 之间的对战开始了'],
+      ['is watching the battle', '正在围观'],
+      ['Dream World', '梦境世界'],
+      ['Sleep Clause', '催眠条款'],
+      ['Freeze Clause', '冰冻条款'],
+      ['Evasion Clause', '回避条款'],
+      ['Species Clause', '种类条款'],
+      ['Self-KO Clause', '自爆条款'],
+      ['won the battle', '赢得了比赛'],
+      ['sent out', '派出了'],
+      ['Attack', '攻击'],
+      ['Defense', '防御'],
+      ['Speed', '速度'],
+      ['Sp. Att.', '特攻'],
+      ['Sp. Def.', '特防'],
+      ['Accuracy', '特防'],
+      ['flung its', '投掷了'],
+      ['special attack', '特攻'],
+      ['It can\'t move', '它无法行动'],
+      ['It\'s a one hit KO', '一击必杀'],
+      ['substitute took the damage', '替身抵挡了伤害'],
+      ['It hurt itself in its confusion', '它因为混乱的原因打了自己'],
+      ['It\'s super effective', '效果拔群'],
+      ['It\'s not very effective', '不是很有效'],
+      ['It may be unable to move', '它可能无法行动'],
+      ['It had no effect on (.+?) !', '对 $1 没有效果！'],
+      ['A critical hit', '命中要害'],
+      ['is damaged by recoil', '受到了反弹伤害'],
+      ['Hit (\\d) times', '击中 $1 次'],
+      ['ate its', '吃掉了'],
+      ['absorbed light', '吸取了阳光'],
+      ['status cleared', '状态恢复了'],
+      ['went to sleep and became healthy', '睡着了并恢复了健康'],
+      ['is floating on a balloon', '挂在气球上'],
+      ['Balloon popped', '气球爆了'],
+      ['restored a little HP using its Leftovers', '通过剩饭回复了一点HP'],
+      ['hasn\'t enough energy left', '没有足够的HP'],
+      ['Flash Fire raised the power of its Fire-type moves', '通过特性 引火 提高了火焰技能的伤害'],
+      ['restored HP using its Poison Heal', '通过特性 毒疗 回复了HP'],
+      ['Drought intensified the sun\'s rays', '特性 干旱 造成了晴天'],
+      ['Sand Stream whipped up a sandstorm', '特性 起沙 造成了沙暴'],
+      ['is exerting its Pressure', '正通过特性 压力 释放一种莫名的气场'],
+      ['Pointed stones dug into', '尖锐的岩石扎伤了'],
+      ['had its energy drained', '能量被吸收了'],
+      ['fell for the taunt', '被挑拨了'],
+      ['It doesn\'t affect', '无法伤害到'],
+      ['had no effect on', '无法影响到'],
+      ['is unaffected', '没有受到影响'],
+      ['infatuated', '颓废了'],
+      ['prevents confusion', '防止了混乱'],
+      ['lowered its head', '放低了头部'],
+      ['took the attack', '接过了攻击'],
+      ['is ready to help', '准备好了帮助'],
+      ['is building', '在上升'],
+      ['makes GROUND moves miss with LEVITATE', '的特性 浮游 使地面系招式无效'],
+      ['ROUGH SKIN hurt', '特性 鲨鱼皮 伤害了'],
+      ['anchored itself with its roots', '的根固定住了自己'],
+      ['stayed awake using its INSOMNIA', '由于特性 不眠 而保持清醒'],
+      ['avoided damage with WONDER GUARD', '的特性 奇异守护 阻挡了攻击'],
+      ['shrouded itself in MAGIC COAT', '隐藏在了魔装之后'],
+      ['hung on using its FOCUS BAND', '的 气息头巾 挡住了致命的攻击'],
+      ['is hurt by BIND', '被勒紧了'],
+      ['was protected by STURDY', '的特性 坚硬 防止了自己被秒'],
+      ['prevents stat loss', '使自身的能力不会被下降'],
+      ['health is sapped by LEECH SEED', '被寄生种子吸取了HP'],
+      ['absorbed nutrients with its roots', '从根部吸取了营养'],
+      ['got free of', '脱离了'],
+      ['became confused out of fatigue', '由于疲劳过度而混乱了'],
+      ['SP. DEF a little', '部分特防'],
+      ['DEF a little', '部分物防'],
+      ['ENDURED the hit', '忍受住了这次攻击'],
+      ['dream was eaten', '梦被吞噬'],
+      ['cured paralysis', '治愈了麻痹状态'],
+      ['woke it from its sleep', '使它从睡眠状态中醒了过来'],
+      ['snapped it out of confusion', '将它从混乱状态中解脱出来'],
+      ['cured its burn problem', '治愈了烧伤状态'],
+      ['cured its paralysis problem', '解除了混乱状态'],
+      ['cured its sleep problem', '治愈了睡眠状态'],
+      ['cured poison', '治愈了中毒状态'],
+      ['cured its poison problem', '治愈了中毒状态'],
+      ['healed its burn', '治愈了烧伤状态'],
+      ['cured its ice problem', '解除了冰冻状态'],
+      ['stat changes', '能力升降'],
+      ['stats won\'t go any higher', '能力无法再提升'],
+      ['won\'t go lower', '无法再降低'],
+      ['won\'t go higher', '无法再提升'],
+      ['status returned to normal', '状态恢复到正常'],
+      ['avoided the attack', '避开了攻击'],
+      ['must recharge', '的身体陷入了硬直状态，无法攻击'],
+      ['is hurt by FIRE SPIN', '受到了技能 火旋涡 的伤害'],
+      ['was trapped in the vortex', '被漩涡缠住了'],
+      ['is hurt by WHIRLPOOL', '受到了技能 旋涡 的伤害'],
+      ['hid underwater', '潜入了水底'],
+      ['has its energy drained', '的精力流失了'],
+      ['took in sunlight', '蓄满了阳光的能量'],
+      ['planted its roots', '将根深深地扎进场地里'],
+      ['was seeded', '被种了种子'],
+      ['is sapped by LEECH SEED', '被寄生种子吸取了HP'],
+      ['began charging power', '的全身充满了电流'],
+      ['is hit by recoil', '受到了攻击的反冲'],
+      ['is stricken by HAIL', '被冰雹打中'],
+      ['becomes shrouded in MIST', '被白雾遮住了'],
+      ['awaits its foe to make a move', '在等候对手出招'],
+      ['is tightening its focus', '在蓄气'],
+      ['lost its focus and couldn\'t move', '无法集中精力蓄力'],
+      ['kept going and crashed', '摔伤了'],
+      ['protected itself', '保护了自己'],
+      ['is badly poisoned', '中了剧毒'],
+      ['is hurt by poison', '被毒伤了'],
+      ['was poisoned', '中毒了'],
+      ['is already poisoned', '已经中毒了'],
+      ['is loafing around', '在四处玩耍没有行动'],
+      ['was set to', '达到了'],
+      ['is hurt by SPIKES', '被铁菱扎伤了'],
+      ['dug a hole', '钻到了地下'],
+      ['was trapped by SAND TOMB', '被卷进了沙地狱中心'],
+      ['is hurt by SAND TOMB', '受到了技能 沙地狱 的损伤'],
+      ['is glowing', '在聚气'],
+      ['flew up high', '飞上了高空'],
+      ['sprang up', '跃上了高空'],
+      ['can\'t escape now', '无法逃脱了'],
+      ['is buffeted by the sandstorm', '受到了沙暴的损伤'],
+      ['became confused', '变得混乱了'],
+      ['made it the', '变成了'],
+      ['wants the opponent to bear a GRUDGE', '想让对手受到怨念'],
+      ['chose DOOM DESIRE as its destiny', '让未来破灭了'],
+      ['foresaw an attack', '预知了未来'],
+      ['took DOOM DESIRE\'s attack', '受到了技能 破灭之愿 的攻击'],
+      ['took FUTURE SIGHT\'s attack', '受到了技能 预知未来 的攻击'],
+      ['lost all its PP due to the GRUDGE', '损失了所有PP'],
+      ['whipped up a whirlwind', '聚敛了一阵狂风'],
+      ['is trying to take its foe with it', '想让对手一起同行'],
+      ['got an ENCORE', '得到了掌声'],
+      ['ENCORE ended', '的掌声停止了'],
+      ['was disabled', '被束缚住了'],
+      ['is getting pumped', '的会心率提升'],
+      ['became the center of attention', '成为了关注的焦点'],
+      ['is covered by a veil', '蒙上了神秘的面纱'],
+      ['can\'t STOCKPILE anymore', '无法储存更多能量'],
+      ['made a Wish', '许了一个愿'],
+      ['cut its own HP and maximized ATTACK', '用牺牲一半HP为代价将自己的物攻升至极限'],
+      ['cut its own HP and laid a CURSE on', '用牺牲一半HP为代价诅咒了'],
+      ['is afflicted by the CURSE', '被诅咒了'],
+      ['fell in love', '堕入爱河'],
+      ['is immobilized by love', '沉浸在爱意里不愿行动'],
+      ['is in love with', '着迷于'],
+      ['was dragged out', '强迫出场'],
+      ['was frozen solid', '冻住了'],
+      ['was defrosted', '解冻了'],
+      ['is frozen solid', '由于冻住而无法行动'],
+      ['became confused', '变混乱了'],
+      ['is confused', '混乱了'],
+      ['is already confused', '已经混乱了'],
+      ['snapped out of confusion', '从混乱状态中清醒了'],
+      ['fell asleep', '睡着了'],
+      ['is already asleep', '已经睡着了'],
+      ['was burned', '烧伤了'],
+      ['is hurt by its burn', '被烧伤了'],
+      ['is hurt by WRAP', '受到了技能 卷紧 的伤害'],
+      ['was freed from', '脱离了'],
+      ['blew away SPIKES', '甩走了钉子'],
+      ['attack missed', '没有命中'],
+      ['is paralyzed! It can\'t move', '由于麻痹而无法行动'],
+      ['is paralyzed', '麻痹了'],
+      ['is already paralyzed', '已经麻痹了'],
+      ['woke up', '醒了'],
+      ['braced itself', '在忍耐'],
+      ['its HP a little', '一点体力'],
+      ['went to sleep', '睡着了'],
+      ['is fast asleep', '在沉睡'],
+      ['It doesn\'t affect', '无法打中'],
+      ['is badly poisoned', '被毒得很严重'],
+      ['is hurt by poison', '被毒伤了'],
+      ['slept and became healthy', '睡着了并恢复了健康'],
+      ['swapped abilities with', '交换特性与'],
+      ['copied', '复制了'],
+      ['knocked off', '打掉了'],
+      ['was subjected to', '被'],
+      ['fell for the', '被'],
+      ['fell into a', '进入了'],
+      ['is locked in a', '做了'],
+      ['The SUBSTITUTE took damage for', '替身挡住了'],
+      ['is protected by SAFEGUARD', '被神秘面纱守护住了'],
+      ['already has a', '已经有了一个'],
+      ['was squeezed by', '被'],
+      ['was WRAPPED by', '被卷紧从'],
+      ['took aim at', '瞄准了'],
+      ['turned into', '变成'],
+      ['Wish came true', '愿望实现了'],
+      ['is full', '已满'],
+      ['transformed into the', '转变成了'],
+      ['transformed into', '变成了'],
+      ['transformed', '转变了属性'],
+      ['is in love with', '喜欢上了'],
+      ['PERISH count fell to', '灭亡时间剩下'],
+      ['switched items with its opponent', '与对手交换了道具'],
+      ['obtained one', '获得了一个'],
+      ['It doesn\'t affect', '无法影响到'],
+      ['can\'t use', '无法使用'],
+      ['used STRUGGLE', '拼命了！呔'],
+      ['anchors itself with SUCTION CUPS', '通过特性 吸盘 牢固了自己'],
+      ['prevents poisoning', '免疫了毒素'],
+      ['sealed the opponent\'s move(s)', '封印了对手的技能'],
+      ['had SPIKES scattered around it', '周围布满了铁菱'],
+      ['its status', '它的状态'],
+      ['restored its HP a little', '回复了一点体力'],
+      ['restored health', '回复了生命值'],
+      ['identified', '识破了'],
+      ['its status', '它的能力'],
+      ['stole', '拿到了'],
+      ['fainted', '倒下了'],
+      ['STOCKPILED', '储存了'],
+      ['found one', '找到了一个'],
+      ['raised its', '提升了'],
+      ['mimiced', '模仿了'],
+      ['flinched and couldn\'t move', '害怕得攻击不能'],
+      ['getting pumped', '提高了会心率'],
+      ['to hustle', '提高了会心率'],
+      ['fell to', '降到'],
+      ['rose to', '升到'],
+      ['used', '使用了'],
+      ['made a', '造了一个'],
+      ['made', '使'],
+      ['useless', '无效了'],
+      ['cuts', '削减了'],
+      ['sharply rose', '大幅上升'],
+      ['sharply fell', '大幅下降'],
+      ['rose\\b', '上升'],
+      ['fell\\b', '下降'],
+      ['Traced', '复制了'],
+      ['TRACED', '复制了'],
+      ['harshly', '急剧'],
+      ['wore off', '消失了'],
+      ['faded', '消失了'],
+      ['SNATCHED', '抢夺了'],
+      ['prevented', '防止了'],
+      ['blocks', '阻挡了'],
+      ['drowsy', '产生了倦意'],
+      ['was too bitter', '使它混乱了'],
+      ['regained', '回复了'],
+      ['FIRE power', '火焰的威力'],
+      ['ELECTRIC power', '电的威力'],
+      ['But it failed to SPIT UP a thing', '但是没有释放任何能量'],
+      ['But it failed to SWALLOW a thing', '但是没有吸收任何能量'],
+      ['But it failed', '但是没有成功'],
+      ['was healed of paralysis', '从麻痹状态下清醒了'],
+      ['is making an UPROAR', '在吵闹'],
+      ['calmed down', '安静下来了'],
+      ['It\'s a one-hit KO', '一击必杀'],
+      ['It was too weak to make a SUBSTITUTE', '但是它的体力不足以制造替身'],
+      ['The battlers shared their pain', '双方平分了他们的痛苦'],
+      ['All affected Pokemon will faint in 3 turns', '双方PM仅剩下3回合存活时间'],
+      ['But it had no effect', '但是没有效果'],
+      ['Coins scattered everywhere', '金币散落在场地四周'],
+      ['A bell chimed', '一阵柔和的铃声响起'],
+      ['A soothing aroma wafted through the area', '一阵宜人的芳香散布在队伍四周'],
+      ['A sandstorm brewed', '一阵沙暴在开始酝酿'],
+      ['The sandstorm rages', '沙暴持续在刮'],
+      ['Electricity\'s power was weakened', '电的威力减轻了'],
+      ['Fire\'s power was weakened', '火的威力减轻了'],
+      ['The sunlight got bright', '阳光变强了'],
+      ['The sunlight is strong', '阳光普照'],
+      ['The sunlight faded', '阳光变弱了'],
+      ['A downpour started', '天空下起了倾盆大雨'],
+      ['Rain continues to fall', '雨一直下'],
+      ['The rain stopped', '雨停了'],
+      ['The sandstorm subsided', '沙暴停止了'],
+      ['It hurt itself in its confusion', '由于混乱攻击起了自己'],
+      ['It started to hail', '天上落下了冰雹'],
+      ['Hail continues to fall', '冰雹持续在下'],
+      ['The hail stopped', '冰雹停止了'],
+      ['All stat changes were eliminated', '所有的能力恢复到了原点'],
+      ['is being sent back', '被收了回来'],
+      ['called (.+?) back', '收回了 $1'],
+      ['Pointed stones float in the air around (.+?) team', '尖锐的岩石布满 $1 周围'],
+      ['stopped watching the battle', '停止了观战'],
+      ['It ', '它'],
+      ['\\!', '！'],
+      ['\\.', '。'],
+      [': ', '：'],
+      [' *\\(', '（'],
+      ['\\) *', '）']
+    ],
+    pokemon: [
+      ['Bulbasaur', '妙蛙种子'], ['Ivysaur', '妙蛙草'], ['Venusaur', '妙蛙花'], ['Charmander', '小火龙'], ['Charmeleon', '火恐龙'], ['Charizard', '喷火龙'], ['Squirtle', '杰尼龟'], ['Wartortle', '卡咪龟'], ['Blastoise', '水箭龟'], ['Caterpie', '绿毛虫'], ['Metapod', '铁甲蛹'], ['Butterfree', '巴大蝴'], ['Weedle', '独角虫'], ['Kakuna', '铁壳昆'], ['Beedrill', '大针蜂'], ['Pidgey', '波波'], ['Pidgeotto', '比比鸟'], ['Pidgeot', '比雕'], ['Rattata', '小拉达'], ['Raticate', '拉达'], ['Spearow', '烈雀'], ['Fearow', '大嘴雀'], ['Ekans', '阿柏蛇'], ['Arbok', '阿柏怪'], ['Pikachu', '皮卡丘'], ['Raichu', '雷丘'], ['Sandshrew', '穿山鼠'], ['Sandslash', '穿山王'], ['Nidoran F', '尼多兰'], ['Nidorina', '尼多娜'], ['Nidoqueen', '尼多后'], ['Nidoran M', '尼多朗'], ['Nidorino', '尼多力诺'], ['Nidoking', '尼多王'], ['Clefairy', '皮皮'], ['Clefable', '皮可西'], ['Vulpix', '六尾'], ['Ninetales', '九尾'], ['Jigglypuff', '胖丁'], ['Wigglytuff', '胖可丁'], ['Zubat', '超音蝠'], ['Golbat', '大嘴蝠'], ['Oddish', '走路草'], ['Gloom', '臭臭花'], ['Vileplume', '霸王花'], ['Paras', '派拉斯'], ['Parasect', '派拉斯特'], ['Venonat', '毛球'], ['Venomoth', '末入蛾'], ['Diglett', '地鼠'], ['Dugtrio', '三地鼠'], ['Meowth', '喵喵'], ['Persian', '猫老大'], ['Psyduck', '可达鸭'], ['Golduck', '哥达鸭'], ['Mankey', '猴怪'], ['Primeape', '火爆猴'], ['Growlithe', '卡蒂狗'], ['Arcanine', '风速狗'], ['Poliwag', '蚊香蝌蚪'], ['Poliwhirl', '蚊香蛙'], ['Poliwrath', '快泳蛙'], ['Abra', '凯西'], ['Kadabra', '勇吉拉'], ['Alakazam', '胡地'], ['Machop', '腕力'], ['Machoke', '豪力'], ['Machamp', '怪力'], ['Bellsprout', '喇叭芽'], ['Weepinbell', '口呆花'], ['Victreebel', '大食花'], ['Tentacool', '玛瑙水母'], ['Tentacruel', '毒刺水母'], ['Geodude', '小拳石'], ['Graveler', '隆隆石'], ['Golem', '隆隆岩'], ['Ponyta', '小火马'], ['Rapidash', '烈焰马'], ['Slowpoke', '呆呆兽'], ['Slowbro', '呆河马'], ['Magnemite', '小磁怪'], ['Magneton', '三合一磁怪'], ['Farfetch\'d', '大葱鸭'], ['Doduo', '嘟嘟'], ['Dodrio', '嘟嘟利'], ['Seel', '小海狮'], ['Dewgong', '白海狮'], ['Grimer', '臭泥'], ['Muk', '臭臭泥'], ['Shellder', '大舌贝'], ['Cloyster', '铁甲贝'], ['Gastly', '鬼斯'], ['Haunter', '鬼斯通'], ['Gengar', '耿鬼'], ['Onix', '大岩蛇'], ['Drowzee', '素利普'], ['Hypno', '素利拍'], ['Krabby', '大钳蟹'], ['Kingler', '巨钳蟹'], ['Voltorb', '雷电球'], ['Electrode', '顽皮弹'], ['Exeggcute', '蛋蛋'], ['Exeggutor', '椰蛋树'], ['Cubone', '可拉可拉'], ['Marowak', '嘎拉嘎拉'], ['Hitmonlee', '沙瓦郎'], ['Hitmonchan', '艾比郎'], ['Lickitung', '大舌头'], ['Koffing', '瓦斯弹'], ['Weezing', '双弹瓦斯'], ['Rhyhorn', '铁甲犀牛'], ['Rhydon', '铁甲暴龙'], ['Chansey', '吉利蛋'], ['Tangela', '蔓藤怪'], ['Kangaskhan', '袋龙'], ['Horsea', '墨海马'], ['Seadra', '海刺龙'], ['Goldeen', '角金鱼'], ['Seaking', '金鱼王'], ['Staryu', '海星星'], ['Starmie', '宝石海星'], ['Mr. Mime', '吸盘魔偶'], ['Scyther', '飞天螳螂'], ['Jynx', '迷唇姐'], ['Electabuzz', '电击兽'], ['Magmar', '鸭嘴火龙'], ['Pinsir', '大甲'], ['Tauros', '肯泰罗'], ['Magikarp', '鲤鱼王'], ['Gyarados', '暴鲤龙'], ['Lapras', '乘龙'], ['Ditto', '百变怪'], ['Eevee', '伊布'], ['Vaporeon', '水精灵'], ['Jolteon', '雷精灵'], ['Flareon', '火精灵'], ['Porygon', '3D龙'], ['Omanyte', '菊石兽'], ['Omastar', '多刺菊石兽'], ['Kabuto', '化石盔'], ['Kabutops', '镰刀盔'], ['Aerodactyl', '化石翼龙'], ['Snorlax', '卡比兽'], ['Articuno', '急冻鸟'], ['Zapdos', '闪电鸟'], ['Moltres', '火焰鸟'], ['Dratini', '迷你龙'], ['Dragonair', '哈克龙'], ['Dragonite', '快龙'], ['Mewtwo', '超梦'], ['Mew', '梦幻'], ['Chikorita', '菊草叶'], ['Bayleef', '月桂叶'], ['Meganium', '大菊花'], ['Cyndaquil', '火球鼠'], ['Quilava', '火岩鼠'], ['Typhlosion', '火暴兽'], ['Totodile', '小锯鳄'], ['Croconaw', '蓝鳄'], ['Feraligatr', '大力鳄'], ['Sentret', '尾立'], ['Furret', '大尾立'], ['Hoothoot', '咕咕'], ['Noctowl', '猫头夜鹰'], ['Ledyba', '芭瓢虫'], ['Ledian', '安瓢虫'], ['Spinarak', '线球'], ['Ariados', '阿利多斯'], ['Crobat', '叉字蝠'], ['Chinchou', '灯笼鱼'], ['Lanturn', '电灯怪'], ['Pichu', '皮丘'], ['Cleffa', '皮宝宝'], ['Igglybuff', '宝宝丁'], ['Togepi', '波克比'], ['Togetic', '波克基古'], ['Natu', '天然雀'], ['Xatu', '天然鸟'], ['Mareep', '咩利羊'], ['Flaaffy', '绵绵'], ['Ampharos', '电龙'], ['Bellossom', '美丽花'], ['Marill', '玛力露'], ['Azumarill', '玛力露丽'], ['Sudowoodo', '胡说树'], ['Politoed', '牛蛙君'], ['Hoppip', '毽子草'], ['Skiploom', '毽子花'], ['Jumpluff', '毽子绵'], ['Aipom', '长尾怪手'], ['Sunkern', '向日种子'], ['Sunflora', '向日花怪'], ['Yanma', '阳阳玛'], ['Wooper', '乌波'], ['Quagsire', '沼王'], ['Espeon', '太阳精灵'], ['Umbreon', '月精灵'], ['Murkrow', '黑暗鸦'], ['Slowking', '河马王'], ['Misdreavus', '梦妖'], ['Unown', '未知图腾'], ['Wobbuffet', '果然翁'], ['Girafarig', '麒麟奇'], ['Pineco', '榛果球'], ['Forretress', '佛烈托斯'], ['Dunsparce', '土龙弟弟'], ['Gligar', '天蝎'], ['Steelix', '大钢蛇'], ['Snubbull', '布卢'], ['Granbull', '布卢皇'], ['Qwilfish', '千针鱼'], ['Scizor', '巨钳螳螂'], ['Shuckle', '壶壶'], ['Heracross', '赫拉克罗斯'], ['Sneasel', '狃拉'], ['Teddiursa', '熊宝宝'], ['Ursaring', '圈圈熊'], ['Slugma', '熔岩虫'], ['Magcargo', '熔岩蜗牛'], ['Swinub', '小山猪'], ['Piloswine', '长毛猪'], ['Corsola', '太阳珊瑚'], ['Remoraid', '铁炮鱼'], ['Octillery', '章鱼桶'], ['Delibird', '信使鸟'], ['Mantine', '巨翅飞鱼'], ['Skarmory', '盔甲鸟'], ['Houndour', '戴鲁比'], ['Houndoom', '黑鲁加'], ['Kingdra', '刺龙王'], ['Phanpy', '小小象'], ['Donphan', '顿甲'], ['Porygon2', '3D龙II'], ['Stantler', '惊角鹿'], ['Smeargle', '图图犬'], ['Tyrogue', '巴尔郎'], ['Hitmontop', '柯波朗'], ['Smoochum', '迷唇娃'], ['Elekid', '电击怪'], ['Magby', '小鸭嘴龙'], ['Miltank', '大奶罐'], ['Blissey', '幸福蛋'], ['Raikou', '雷公'], ['Entei', '炎帝'], ['Suicune', '水君'], ['Larvitar', '由基拉'], ['Pupitar', '沙基拉'], ['Tyranitar', '班吉拉'], ['Lugia', '洛奇亚'], ['Ho-Oh', '凤王'], ['Celebi', '雪拉比'], ['Treecko', '木守宫'], ['Grovyle', '森林蜥蜴'], ['Sceptile', '蜥蜴王'], ['Torchic', '火稚鸡'], ['Combusken', '力壮鸡'], ['Blaziken', '火焰鸡'], ['Mudkip', '水跃鱼'], ['Marshtomp', '沼跃鱼'], ['Swampert', '巨沼怪'], ['Poochyena', '土狼犬'], ['Mightyena', '大狼犬'], ['Zigzagoon', '蛇纹熊'], ['Linoone', '直冲熊'], ['Wurmple', '刺尾虫'], ['Silcoon', '甲壳蛹'], ['Beautifly', '狩猎凤蝶'], ['Cascoon', '盾甲茧'], ['Dustox', '毒粉蝶'], ['Lotad', '莲叶童子'], ['Lombre', '莲帽小童'], ['Ludicolo', '乐天河童'], ['Seedot', '橡实果'], ['Nuzleaf', '长鼻叶'], ['Shiftry', '狡猾天狗'], ['Taillow', '傲骨燕'], ['Swellow', '大王燕'], ['Wingull', '长翅鸥'], ['Pelipper', '大嘴鸥'], ['Ralts', '拉鲁拉丝'], ['Kirlia', '奇鲁莉安'], ['Gardevoir', '沙奈朵'], ['Surskit', '溜溜糖球'], ['Masquerain', '雨翅蛾'], ['Shroomish', '蘑蘑菇'], ['Breloom', '斗笠菇'], ['Slakoth', '懒人翁'], ['Vigoroth', '过动猿'], ['Slaking', '请假王'], ['Nincada', '土居忍士'], ['Ninjask', '铁面忍者'], ['Shedinja', '脱壳忍者'], ['Whismur', '咕妞妞'], ['Loudred', '吼爆弹'], ['Exploud', '爆音怪'], ['Makuhita', '幕下力士'], ['Hariyama', '超力王'], ['Azurill', '露力丽'], ['Nosepass', '朝北鼻'], ['Skitty', '向尾喵'], ['Delcatty', '优雅猫'], ['Sableye', '勾魂眼'], ['Mawile', '大嘴娃'], ['Aron', '可可多拉'], ['Lairon', '可多拉'], ['Aggron', '波士可多拉'], ['Meditite', '玛沙那'], ['Medicham', '恰雷姆'], ['Electrike', '落雷兽'], ['Manectric', '雷电兽'], ['Plusle', '正电拍拍'], ['Minun', '负电拍拍'], ['Volbeat', '电萤虫'], ['Illumise', '甜甜萤'], ['Roselia', '毒蔷薇'], ['Gulpin', '溶食兽'], ['Swalot', '吞食兽'], ['Carvanha', '利牙鱼'], ['Sharpedo', '巨牙鲨'], ['Wailmer', '吼吼鲸'], ['Wailord', '吼鲸王'], ['Numel', '呆火驼'], ['Camerupt', '喷火驼'], ['Torkoal', '煤炭龟'], ['Spoink', '跳跳猪'], ['Grumpig', '噗噗猪'], ['Spinda', '晃晃斑'], ['Trapinch', '大颚蚁'], ['Vibrava', '超音波幼虫'], ['Flygon', '沙漠蜻蜓'], ['Cacnea', '沙漠奈亚'], ['Cacturne', '梦歌奈亚'], ['Swablu', '青绵鸟'], ['Altaria', '七夕青鸟'], ['Zangoose', '猫鼬斩'], ['Seviper', '饭匙蛇'], ['Lunatone', '月石'], ['Solrock', '太阳岩'], ['Barboach', '泥泥鳅'], ['Whiscash', '鲶鱼王'], ['Corphish', '龙虾小兵'], ['Crawdaunt', '铁螯龙虾'], ['Baltoy', '天秤偶'], ['Claydol', '念力土偶'], ['Lileep', '触手百合'], ['Cradily', '摇篮百合'], ['Anorith', '太古羽虫'], ['Armaldo', '太古盔甲'], ['Feebas', '笨笨鱼'], ['Milotic', '美纳斯'], ['Castform', '漂浮泡泡'], ['Kecleon', '变隐龙'], ['Shuppet', '怨影娃娃'], ['Banette', '诅咒娃娃'], ['Duskull', '夜骷颅'], ['Dusclops', '夜巨人'], ['Tropius', '热带龙'], ['Chimecho', '风铃铃'], ['Absol', '阿勃梭鲁'], ['Wynaut', '小果然'], ['Snorunt', '雪童子'], ['Glalie', '冰鬼护'], ['Spheal', '海豹球'], ['Sealeo', '海魔狮'], ['Walrein', '帝牙海狮'], ['Clamperl', '珍珠贝'], ['Huntail', '猎斑鱼'], ['Gorebyss', '樱花鱼'], ['Relicanth', '古空棘鱼'], ['Luvdisc', '爱心鱼'], ['Bagon', '宝贝龙'], ['Shelgon', '甲壳龙'], ['Salamence', '暴蝾螈'], ['Beldum', '铁哑铃'], ['Metang', '金属怪'], ['Metagross', '巨金怪'], ['Regirock', '雷吉洛克'], ['Regice', '雷吉艾斯'], ['Registeel', '雷吉斯奇鲁'], ['Latias', '拉帝亚斯'], ['Latios', '拉帝欧斯'], ['Kyogre', '盖欧卡'], ['Groudon', '固拉多'], ['Rayquaza', '烈空坐'], ['Jirachi', '基拉祈'], ['Deoxys', '代欧奇希斯'], ['Turtwig', '草苗龟'], ['Grotle', '树林龟'], ['Torterra', '土台龟'], ['Chimchar', '小火焰猴'], ['Monferno', '猛火猴'], ['Infernape', '烈焰猴'], ['Piplup', '波加曼'], ['Prinplup', '波皇子'], ['Empoleon', '帝王拿波'], ['Starly', '姆克儿'], ['Staravia', '姆克鸟'], ['Staraptor', '姆克鹰'], ['Bidoof', '大牙狸'], ['Bibarel', '大尾狸'], ['Kricketot', '圆法师'], ['Kricketune', '音箱蟀'], ['Shinx', '小猫怪'], ['Luxio', '勒克猫'], ['Luxray', '伦琴猫'], ['Budew', '含羞苞'], ['Roserade', '罗丝雷朵'], ['Cranidos', '头盖龙'], ['Rampardos', '战槌龙'], ['Shieldon', '盾甲龙'], ['Bastiodon', '护城龙'], ['Burmy', '结草儿'], ['Wormadam', '结草贵妇-草木'], ['Mothim', '绅士蛾'], ['Combee', '三蜜蜂'], ['Vespiquen', '蜂后'], ['Pachirisu', '帕奇利兹'], ['Buizel', '泳气鼬'], ['Floatzel', '浮潜鼬'], ['Cherubi', '樱花宝'], ['Cherrim', '樱花儿'], ['Shellos', '无壳海牛'], ['Gastrodon', '海牛兽'], ['Ambipom', '双尾怪手'], ['Drifloon', '飘飘球'], ['Drifblim', '附和气球'], ['Buneary', '卷卷耳'], ['Lopunny', '长耳兔'], ['Mismagius', '梦妖魔'], ['Honchkrow', '乌鸦头头'], ['Glameow', '魅力喵'], ['Purugly', '东施喵'], ['Chingling', '铃铛响'], ['Stunky', '臭鼬噗'], ['Skuntank', '坦克臭鼬'], ['Bronzor', '铜镜怪'], ['Bronzong', '青铜钟'], ['Bonsly', '爱哭树'], ['Mime Jr.', '魔尼尼'], ['Happiny', '好运蛋'], ['Chatot', '聒噪鸟'], ['Spiritomb', '花岩怪'], ['Gible', '圆陆鲨'], ['Gabite', '尖牙陆鲨'], ['Garchomp', '烈咬陆鲨'], ['Munchlax', '小卡比兽'], ['Riolu', '利欧路'], ['Lucario', '路卡利欧'], ['Hippopotas', '怪河马'], ['Hippowdon', '河马兽'], ['Skorupi', '紫天蝎'], ['Drapion', '龙王蝎'], ['Croagunk', '不良蛙'], ['Toxicroak', '毒骷蛙'], ['Carnivine', '尖牙笼'], ['Finneon', '萤光鱼'], ['Lumineon', '霓虹鱼'], ['Mantyke', '小球飞鱼'], ['Snover', '雪笠怪'], ['Abomasnow', '暴雪王'], ['Weavile', '玛狃拉'], ['Magnezone', '自爆磁怪'], ['Lickilicky', '大舌舔'], ['Rhyperior', '超铁暴龙'], ['Tangrowth', '巨蔓藤'], ['Electivire', '电击魔兽'], ['Magmortar', '鸭嘴焰龙'], ['Togekiss', '波克基斯'], ['Yanmega', '梅卡阳玛'], ['Leafeon', '叶精灵'], ['Glaceon', '冰精灵'], ['Gliscor', '天蝎王'], ['Mamoswine', '象牙猪'], ['Porygon-Z', '3D龙Z'], ['Gallade', '艾路雷朵'], ['Probopass', '大朝北鼻'], ['Dusknoir', '夜黑魔人'], ['Froslass', '雪妖女'], ['Rotom', '洛托姆'], ['Uxie', '由克希'], ['Mesprit', '艾姆利多'], ['Azelf', '亚克诺姆'], ['Dialga', '帝牙卢卡'], ['Palkia', '帕路奇犽'], ['Heatran', '席多蓝恩'], ['Regigigas', '雷吉奇卡斯'], ['Giratina', '骑拉帝纳'], ['Cresselia', '克雷色利亚'], ['Phione', '霏欧纳'], ['Manaphy', '玛纳霏'], ['Darkrai', '达克莱伊'], ['Shaymin', '洁咪'], ['Arceus', '阿尔宙斯'], ['Victini', '比克提尼'], ['Snivy', '藤藤蛇'], ['Servine', '青藤蛇'], ['Serperior', '君主蛇'], ['Tepig', '暖暖猪'], ['Pignite', '炒炒猪'], ['Emboar', '炎武王'], ['Oshawott', '水水獭'], ['Dewott', '双刃丸'], ['Samurott', '大剑鬼'], ['Patrat', '探探鼠'], ['Watchog', '步哨鼠'], ['Lillipup', '小约克'], ['Herdier', '哈约克'], ['Stoutland', '长毛狗'], ['Purrloin', '扒手猫'], ['Liepard', '酷豹'], ['Pansage', '花椰猴'], ['Simisage', '花椰猿'], ['Pansear', '爆香猴'], ['Simisear', '爆香猿'], ['Panpour', '冷水猴'], ['Simipour', '冷水猿'], ['Munna', '食梦梦'], ['Musharna', '梦梦蚀'], ['Pidove', '豆豆鸽'], ['Tranquill', '波波鸽'], ['Unfezant', '轰隆雉鸡'], ['Blitzle', '斑斑马'], ['Zebstrika', '雷电斑马'], ['Roggenrola', '石丸子'], ['Boldore', '地幔岩'], ['Gigalith', '庞岩怪'], ['Woobat', '滚滚蝙蝠'], ['Swoobat', '心蝙蝠'], ['Drilbur', '螺钉地鼠'], ['Excadrill', '龙头地鼠'], ['Audino', '差不多娃娃'], ['Timburr', '搬运小匠'], ['Gurdurr', '铁骨土人'], ['Conkeldurr', '修缮老头'], ['Tympole', '圆蝌蚪'], ['Palpitoad', '蓝蟾蜍'], ['Seismitoad', '蟾蜍王'], ['Throh', '投射鬼'], ['Sawk', '打击鬼'], ['Sewaddle', '虫宝包'], ['Swadloon', '宝包茧'], ['Leavanny', '保母虫'], ['Venipede', '百足蜈蚣'], ['Whirlipede', '车轮球'], ['Scolipede', '蜈蚣王'], ['Cottonee', '木棉球'], ['Whimsicott', '风妖精'], ['Petilil', '百合根娃娃'], ['Lilligant', '裙儿小姐'], ['Basculin', '勇士鲈鱼-红纹'], ['Sandile', '黑眼鳄'], ['Krokorok', '混混鳄'], ['Krookodile', '流氓鳄'], ['Darumaka', '火红不倒翁'], ['Darmanitan', '达摩狒狒'], ['Maractus', '街头沙铃'], ['Dwebble', '石居蟹'], ['Crustle', '岩殿居蟹'], ['Scraggy', '滑头小子'], ['Scrafty', '头巾混混'], ['Sigilyph', '象征鸟'], ['Yamask', '哭哭面具'], ['Cofagrigus', '死神棺'], ['Tirtouga', '原盖海龟'], ['Carracosta', '肋骨海龟'], ['Archen', '始祖小鸟'], ['Archeops', '始祖大鸟'], ['Trubbish', '破破袋'], ['Garbodor', '灰尘山'], ['Zorua', '索罗亚'], ['Zoroark', '索罗亚克'], ['Minccino', '泡沫栗鼠'], ['Cinccino', '奇诺栗鼠'], ['Gothita', '哥德宝宝'], ['Gothorita', '哥德小童'], ['Gothitelle', '哥德小姐'], ['Solosis', '单卵细胞球'], ['Duosion', '双卵细胞球'], ['Reuniclus', '人造细胞卵'], ['Ducklett', '鸭宝宝'], ['Swanna', '首席天鹅'], ['Vanillite', '迷你冰'], ['Vanillish', '多多冰'], ['Vanilluxe', '双倍多多冰'], ['Deerling', '四季鹿'], ['Sawsbuck', '芽吹鹿'], ['Emolga', '导电飞鼠'], ['Karrablast', '盖盖虫'], ['Escavalier', '骑士蜗牛'], ['Foongus', '宝贝球菇'], ['Amoonguss', '暴露菇'], ['Frillish', '轻飘飘'], ['Jellicent', '胖嘟嘟'], ['Alomomola', '保母曼波'], ['Joltik', '电电虫'], ['Galvantula', '电蜘蛛'], ['Ferroseed', '种子铁球'], ['Ferrothorn', '坚果哑铃'], ['Klink', '齿轮儿'], ['Klang', '齿轮组'], ['Klinklang', '齿轮怪'], ['Tynamo', '麻麻小鱼'], ['Eelektrik', '麻麻鳗'], ['Eelektross', '麻麻鳗鱼王'], ['Elgyem', '小灰怪'], ['Beheeyem', '大宇怪'], ['Litwick', '烛光灵'], ['Lampent', '灯火幽灵'], ['Chandelure', '水晶灯火灵'], ['Axew', '牙牙'], ['Fraxure', '斧牙龙'], ['Haxorus', '双斧战龙'], ['Cubchoo', '喷嚏熊'], ['Beartic', '冻原熊'], ['Cryogonal', '几何雪花'], ['Shelmet', '小嘴蜗'], ['Accelgor', '敏捷虫'], ['Stunfisk', '泥巴鱼'], ['Mienfoo', '功夫鼬'], ['Mienshao', '师父鼬'], ['Druddigon', '赤面龙'], ['Golett', '泥偶小人'], ['Golurk', '泥偶巨人'], ['Pawniard', '驹刀小兵'], ['Bisharp', '劈斩司令'], ['Bouffalant', '爆爆头水牛'], ['Rufflet', '毛头小鹰'], ['Braviary', '勇士鹰'], ['Vullaby', '秃鹰小子'], ['Mandibuzz', '秃鹰娜'], ['Heatmor', '食蚁炉'], ['Durant', '铁蚁'], ['Deino', '单首龙'], ['Zweilous', '双头龙'], ['Hydreigon', '三头龙'], ['Larvesta', '燃烧虫'], ['Volcarona', '火神虫'], ['Cobalion', '勾帕路翁'], ['Terrakion', '代拉基翁'], ['Virizion', '毕力吉翁'], ['Tornadus', '龙卷云'], ['Thundurus', '雷电云'], ['Reshiram', '雷希拉姆'], ['Zekrom', '捷克罗姆'], ['Landorus', '土地云'], ['Kyurem', '酋雷姆'], ['Keldeo', '凯路迪欧'], ['Meloetta', '美洛耶塔'], ['Genesect', '盖诺赛克特'], ['Chespin', '哈力栗'], ['Quilladin', '胖胖哈力'], ['Chesnaught', '布里卡隆'], ['Fennekin', '火狐狸'], ['Braixen', '长尾火狐'], ['Delphox', '妖火红狐'], ['Froakie', '呱呱泡蛙'], ['Frogadier', '呱头蛙'], ['Greninja', '甲贺忍蛙'], ['Bunnelby', '掘掘兔'], ['Diggersby', '攉土兔'], ['Fletchling', '小箭雀'], ['Fletchinder', '火箭雀'], ['Talonflame', '烈箭鹟'], ['Scatterbug', '粉蛹'], ['Spewpa', '粉蝶蛹'], ['Vivillon', '碧粉蝶'], ['Litleo', '小狮狮'], ['Pyroar', '火炎狮'], ['Flabébé', '花蓓蓓'], ['Floette', '花叶蒂'], ['Florges', '花洁夫人'], ['Skiddo', '咩咩羊'], ['Gogoat', '坐骑山羊'], ['Pancham', '顽皮熊猫'], ['Pangoro', '流氓熊猫'], ['Furfrou', '多丽米亚'], ['Espurr', '妙喵'], ['Meowstic', '超能妙喵'], ['Honedge', '独剑鞘'], ['Doublade', '双剑鞘'], ['Aegislash', '坚盾剑怪'], ['Spritzee', '粉香香'], ['Aromatisse', '芳香精'], ['Swirlix', '绵绵泡芙'], ['Slurpuff', '胖甜妮'], ['Inkay', '豪喇花枝'], ['Malamar', '乌贼王'], ['Binacle', '龟脚脚'], ['Barbaracle', '龟足巨铠'], ['Skrelp', '垃垃藻'], ['Dragalge', '毒拉蜜妮'], ['Clauncher', '铁臂枪虾'], ['Clawitzer', '钢砲臂虾'], ['Helioptile', '伞电蜥'], ['Heliolisk', '电伞查特'], ['Tyrunt', '宝宝暴龙'], ['Tyrantrum', '怪颚龙'], ['Amaura', '冰雪龙'], ['Aurorus', '冰雪巨龙'], ['Sylveon', '仙子精灵'], ['Hawlucha', '战斗飞鸟'], ['Dedenne', '咚咚鼠'], ['Carbink', '小碎钻'], ['Goomy', '黏黏宝'], ['Sliggoo', '黏美伊儿'], ['Goodra', '黏美露龙'], ['Klefki', '钥圈儿'], ['Phantump', '小木灵'], ['Trevenant', '朽木妖'], ['Pumpkaboo', '南瓜精'], ['Gourgeist', '南瓜怪人'], ['Bergmite', '冰宝'], ['Avalugg', '冰岩怪'], ['Noibat', '嗡蝠'], ['Noivern', '音波龙'], ['Xerneas', '哲尔尼亚斯'], ['Yveltal', '伊裴尔塔尔'], ['Zygarde', '机格尔德'], ['Diancie', '蒂安希'], ['Hoopa', '胡巴'], ['Volcanion', '波尔凯尼恩']
+    ],
+    moves  : [
+      ['Pound', '拍打'], ['Karate Chop', '空手刀'], ['Double Slap', '往复拍打'], ['Comet Punch', '连续拳'], ['Mega Punch', '百万拳击'], ['Pay Day', '招财猫'], ['Fire Punch', '火焰拳'], ['Ice Punch', '冷冻拳'], ['Thunder Punch', '雷电拳'], ['Scratch', '抓'], ['Vice Grip', '夹'], ['Guillotine', '剪刀断头台'], ['Razor Wind', '镰鼬风'], ['Swords Dance', '剑之舞'], ['Cut', '居合斩'], ['Gust', '起风'], ['Wing Attack', '翅膀拍击'], ['Whirlwind', '吹飞'], ['Fly', '飞空'], ['Bind', '勒住'], ['Slam', '打倒'], ['Vine Whip', '藤鞭'], ['Stomp', '践踏'], ['Double Kick', '连环踢'], ['Mega Kick', '百万腿踢'], ['Jump Kick', '飞踢'], ['Rolling Kick', '回旋踢'], ['Sand Attack', '扔沙'], ['Headbutt', '头槌'], ['Horn Attack', '角突'], ['Fury Attack', '乱突'], ['Horn Drill', '尖角钻'], ['Tackle', '撞击'], ['Body Slam', '压制'], ['Wrap', '卷紧'], ['Take Down', '突进'], ['Thrash', '暴走'], ['Double-Edge', '舍身撞'], ['Tail Whip', '甩尾'], ['Poison Sting', '毒针'], ['Twineedle', '双针'], ['Pin Missile', '导弹针'], ['Leer', '瞪眼'], ['Bite', '啃咬'], ['Growl', '叫声'], ['Roar', '吼叫'], ['Sing', '歌唱'], ['Supersonic', '超音波'], ['Sonic Boom', '音波爆'], ['Disable', '残废'], ['Acid', '溶解液'], ['Ember', '火苗'], ['Flamethrower', '火焰放射'], ['Mist', '白雾'], ['Water Gun', '水枪'], ['Hydro Pump', '水压'], ['Surf', '冲浪'], ['Ice Beam', '冷冻光线'], ['Blizzard', '暴风雪'], ['Psybeam', '精神光线'], ['Bubble Beam', '泡沫光线'], ['Aurora Beam', '极光光线'], ['Hyper Beam', '破坏光线'], ['Peck', '啄'], ['Drill Peck', '钻孔啄'], ['Submission', '地狱车'], ['Low Kick', '过肩摔'], ['Counter', '反击'], ['Seismic Toss', '地球投'], ['Strength', '怪力'], ['Absorb', '吸取'], ['Mega Drain', '百万吸取'], ['Leech Seed', '寄生种子'], ['Growth', '成长'], ['Razor Leaf', '飞叶斩'], ['Solar Beam', '太阳光线'], ['Poison Powder', '毒粉'], ['Stun Spore', '麻痹粉'], ['Sleep Powder', '催眠粉'], ['Petal Dance', '花瓣舞'], ['String Shot', '吐丝'], ['Dragon Rage', '龙之怒'], ['Fire Spin', '火旋涡'], ['Thunder Shock', '电击'], ['Thunderbolt', '十万伏特'], ['Thunder Wave', '电磁波'], ['Thunder', '雷电'], ['Rock Throw', '落石'], ['Earthquake', '地震'], ['Fissure', '地裂'], ['Dig', '挖洞'], ['Toxic', '剧毒'], ['Confusion', '念力'], ['Psychic', '精神干扰'], ['Hypnosis', '催眠术'], ['Meditate', '瑜珈之形'], ['Agility', '高速移动'], ['Quick Attack', '电光石火'], ['Rage', '愤怒'], ['Teleport', '瞬间移动'], ['Night Shade', '黑夜魔影'], ['Mimic', '模仿'], ['Screech', '噪音'], ['Double Team', '影分身'], ['Recover', '自我再生'], ['Harden', '变硬'], ['Minimize', '变小'], ['Smokescreen', '烟幕'], ['Confuse Ray', '怪异光线'], ['Withdraw', '躲进贝壳'], ['Defense Curl', '变圆'], ['Barrier', '栅栏'], ['Light Screen', '光之壁'], ['Haze', '黑雾'], ['Reflect', '反射盾'], ['Focus Energy', '蓄气'], ['Bide', '克制'], ['Metronome', '摇手指'], ['Mirror Move', '鹦鹉学舌'], ['Self-Destruct', '自爆'], ['Egg Bomb', '蛋蛋爆弹'], ['Lick', '舌舔'], ['Smog', '毒雾'], ['Sludge', '淤泥攻击'], ['Bone Club', '骨头棍'], ['Fire Blast', '大字火'], ['Waterfall', '登瀑'], ['Clamp', '贝壳夹'], ['Swift', '迅星'], ['Skull Bash', '火箭头槌'], ['Spike Cannon', '尖刺加农炮'], ['Constrict', '缠绕'], ['Amnesia', '超级健忘'], ['Kinesis', '弄弯匙子'], ['Soft-Boiled', '生蛋'], ['High Jump Kick', '飞膝踢'], ['Glare', '蛇瞪眼'], ['Dream Eater', '食梦'], ['Poison Gas', '毒瓦斯'], ['Barrage', '扔蛋'], ['Leech Life', '吸血'], ['Lovely Kiss', '恶魔之吻'], ['Sky Attack', '神鸟'], ['Transform', '变身'], ['Bubble', '水泡'], ['Dizzy Punch', '飘飘拳'], ['Spore', '蘑菇孢子'], ['Flash', '闪光'], ['Psywave', '精神波动'], ['Splash', '弹跳'], ['Acid Armor', '溶化'], ['Crabhammer', '蟹钳锤'], ['Explosion', '大爆炸'], ['Fury Swipes', '乱抓'], ['Bonemerang', '骨头回旋镖'], ['Rest', '睡眠'], ['Rock Slide', '岩崩'], ['Hyper Fang', '必杀门牙'], ['Sharpen', '变方'], ['Conversion', '属性切换'], ['Tri Attack', '三角攻击'], ['Super Fang', '愤怒门牙'], ['Slash', '切裂'], ['Substitute', '替身'], ['Struggle', '拼命'], ['Sketch', '素描'], ['Triple Kick', '三连踢'], ['Thief', '偷盗'], ['Spider Web', '蜘蛛网'], ['Mind Reader', '心眼'], ['Nightmare', '噩梦'], ['Flame Wheel', '火焰车'], ['Snore', '鼾声'], ['Curse', '诅咒'], ['Flail', '垂死挣扎'], ['Conversion 2', '属性切换２'], ['Aeroblast', '空中爆破'], ['Cotton Spore', '棉花孢子'], ['Reversal', '起死回生'], ['Spite', '恨'], ['Powder Snow', '细雪'], ['Protect', '保护'], ['Mach Punch', '音速拳'], ['Scary Face', '恐惧颜'], ['Feint Attack', '暗算'], ['Sweet Kiss', '天使之吻'], ['Belly Drum', '腹鼓'], ['Sludge Bomb', '淤泥爆弹'], ['Mud-Slap', '扔泥'], ['Octazooka', '墨汁炮'], ['Spikes', '撒菱'], ['Zap Cannon', '电磁炮'], ['Foresight', '识破'], ['Destiny Bond', '同旅'], ['Perish Song', '灭亡之歌'], ['Icy Wind', '冰冻之风'], ['Detect', '见切'], ['Bone Rush', '骨头冲锋'], ['Lock-On', '锁定'], ['Outrage', '逆鳞'], ['Sandstorm', '沙暴'], ['Giga Drain', '亿万吸取'], ['Endure', '忍耐'], ['Charm', '撒娇'], ['Rollout', '滚动'], ['False Swipe', '刀背打'], ['Swagger', '虚张声势'], ['Milk Drink', '饮奶'], ['Spark', '电火花'], ['Fury Cutter', '连续切'], ['Steel Wing', '钢之翼'], ['Mean Look', '黑眼神'], ['Attract', '着迷'], ['Sleep Talk', '梦话'], ['Heal Bell', '治愈之铃'], ['Return', '报恩'], ['Present', '礼物'], ['Frustration', '撒气'], ['Safeguard', '神秘守护'], ['Pain Split', '痛苦平分'], ['Sacred Fire', '神圣火焰'], ['Magnitude', '震级变化'], ['Dynamic Punch', '爆裂拳'], ['Megahorn', '百万角击'], ['Dragon Breath', '龙之吐息'], ['Baton Pass', '接力棒'], ['Encore', '鼓掌'], ['Pursuit', '追击'], ['Rapid Spin', '高速旋转'], ['Sweet Scent', '香甜气息'], ['Iron Tail', '铁尾'], ['Metal Claw', '金属爪'], ['Vital Throw', '当身投'], ['Morning Sun', '朝之阳'], ['Synthesis', '光合作用'], ['Moonlight', '月之光'], ['Hidden Power', '觉醒力量'], ['Cross Chop', '十字切'], ['Twister', '龙卷风'], ['Rain Dance', '祈雨'], ['Sunny Day', '放晴'], ['Crunch', '咬碎'], ['Mirror Coat', '镜面反射'], ['Psych Up', '自我暗示'], ['Extreme Speed', '神速'], ['Ancient Power', '原始力量'], ['Shadow Ball', '阴影球'], ['Future Sight', '预知未来'], ['Rock Smash', '碎岩'], ['Whirlpool', '漩涡'], ['Beat Up', '围攻'], ['Fake Out', '下马威'], ['Uproar', '吵闹'], ['Stockpile', '能量储存'], ['Spit Up', '能量释放'], ['Swallow', '能量吸入'], ['Heat Wave', '热风'], ['Hail', '冰雹'], ['Torment', '寻衅'], ['Flatter', '煽动'], ['Will-O-Wisp', '鬼火'], ['Memento', '临别礼物'], ['Facade', '空元气'], ['Focus Punch', '气合拳'], ['Smelling Salts', '清醒'], ['Follow Me', '跟我来'], ['Nature Power', '自然力量'], ['Charge', '充电'], ['Taunt', '挑拨'], ['Helping Hand', '帮手'], ['Trick', '戏法'], ['Role Play', '换装'], ['Wish', '许愿'], ['Assist', '猫之手'], ['Ingrain', '扎根'], ['Superpower', '蛮力'], ['Magic Coat', '魔装反射'], ['Recycle', '道具回收'], ['Revenge', '复仇'], ['Brick Break', '瓦割'], ['Yawn', '哈欠'], ['Knock Off', '打落'], ['Endeavor', '莽撞'], ['Eruption', '喷火'], ['Skill Swap', '特性交换'], ['Imprison', '封印'], ['Refresh', '精神回复'], ['Grudge', '怨念'], ['Snatch', '抢夺'], ['Secret Power', '秘密力量'], ['Dive', '潜水'], ['Arm Thrust', '突张'], ['Camouflage', '保护色'], ['Tail Glow', '萤火'], ['Luster Purge', '光栅净化'], ['Mist Ball', '迷雾球'], ['Feather Dance', '羽毛舞'], ['Teeter Dance', '草裙舞'], ['Blaze Kick', '火花踢'], ['Mud Sport', '玩泥'], ['Ice Ball', '冰球'], ['Needle Arm', '针刺臂膀'], ['Slack Off', '偷懒'], ['Hyper Voice', '高级噪音'], ['Poison Fang', '剧毒之牙'], ['Crush Claw', '崩击之爪'], ['Blast Burn', '爆裂燃烧'], ['Hydro Cannon', '水压加农'], ['Meteor Mash', '彗星拳'], ['Astonish', '恐吓'], ['Weather Ball', '气象球'], ['Aromatherapy', '芳香疗法'], ['Fake Tears', '假哭'], ['Air Cutter', '空气刃'], ['Overheat', '燃烧殆尽'], ['Odor Sleuth', '嗅觉'], ['Rock Tomb', '岩石封'], ['Silver Wind', '银色之风'], ['Metal Sound', '金属音'], ['Grass Whistle', '草笛'], ['Tickle', '挠痒'], ['Cosmic Power', '宇宙力量'], ['Water Spout', '喷水'], ['Signal Beam', '信号光线'], ['Shadow Punch', '暗影拳'], ['Extrasensory', '神通力'], ['Sky Uppercut', '升空拳'], ['Sand Tomb', '沙地狱'], ['Sheer Cold', '绝对零度'], ['Muddy Water', '浊流'], ['Bullet Seed', '种子机枪'], ['Aerial Ace', '燕返'], ['Icicle Spear', '冰柱针'], ['Iron Defense', '铁壁'], ['Block', '禁止通行'], ['Howl', '远吠'], ['Dragon Claw', '龙之爪'], ['Frenzy Plant', '硬化植物'], ['Bulk Up', '巨大化'], ['Bounce', '飞跃'], ['Mud Shot', '泥浆喷射'], ['Poison Tail', '毒尾'], ['Covet', '索要'], ['Volt Tackle', '高压电击'], ['Magical Leaf', '魔叶斩'], ['Water Sport', '玩水'], ['Calm Mind', '冥想'], ['Leaf Blade', '刃叶斩'], ['Dragon Dance', '龙之舞'], ['Rock Blast', '岩石爆破'], ['Shock Wave', '电击波'], ['Water Pulse', '水之波动'], ['Doom Desire', '破灭之愿'], ['Psycho Boost', '精神增压'], ['Roost', '羽栖'], ['Gravity', '重力'], ['Miracle Eye', '奇迹之眼'], ['Wake-Up Slap', '清醒拍打'], ['Hammer Arm', '臂锤'], ['Gyro Ball', '螺旋球'], ['Healing Wish', '治愈之愿'], ['Brine', '潮水'], ['Natural Gift', '自然恩惠'], ['Feint', '佯攻'], ['Pluck', '啄食'], ['Tailwind', '顺风'], ['Acupressure', '点穴'], ['Metal Burst', '金属爆破'], ['U-turn', '蜻蜓回转'], ['Close Combat', '近战'], ['Payback', '报复'], ['Assurance', '连打'], ['Embargo', '扣押'], ['Fling', '投掷'], ['Psycho Shift', '精神转移'], ['Trump Card', '王牌'], ['Heal Block', '回复封印'], ['Wring Out', '绞紧'], ['Power Trick', '力量戏法'], ['Gastro Acid', '胃液'], ['Lucky Chant', '咒语'], ['Me First', '先取'], ['Copycat', '效仿'], ['Power Swap', '力量交换'], ['Guard Swap', '防御交换'], ['Punishment', '惩罚'], ['Last Resort', '最终手段'], ['Worry Seed', '烦恼种子'], ['Sucker Punch', '偷袭'], ['Toxic Spikes', '毒菱'], ['Heart Swap', '心灵交换'], ['Aqua Ring', '液态圈'], ['Magnet Rise', '电磁浮游'], ['Flare Blitz', '火焰驱进'], ['Force Palm', '发劲'], ['Aura Sphere', '波导弹'], ['Rock Polish', '岩切'], ['Poison Jab', '毒突'], ['Dark Pulse', '恶之波动'], ['Night Slash', '试刀'], ['Aqua Tail', '水之尾'], ['Seed Bomb', '种子爆弹'], ['Air Slash', '空气切割'], ['X-Scissor', '十字剪'], ['Bug Buzz', '虫鸣'], ['Dragon Pulse', '龙之波动'], ['Dragon Rush', '龙之冲锋'], ['Power Gem', '力量宝石'], ['Drain Punch', '吸取拳'], ['Vacuum Wave', '真空波'], ['Focus Blast', '气合弹'], ['Energy Ball', '能量球'], ['Brave Bird', '勇鸟'], ['Earth Power', '大地之力'], ['Switcheroo', '偷换'], ['Giga Impact', '亿万冲击'], ['Nasty Plot', '阴谋'], ['Bullet Punch', '子弹拳'], ['Avalanche', '雪崩'], ['Ice Shard', '冰之砾'], ['Shadow Claw', '阴影爪'], ['Thunder Fang', '雷之牙'], ['Ice Fang', '冰之牙'], ['Fire Fang', '火之牙'], ['Shadow Sneak', '影击'], ['Mud Bomb', '泥爆弹'], ['Psycho Cut', '精神切割'], ['Zen Headbutt', '思念头槌'], ['Mirror Shot', '镜面射击'], ['Flash Cannon', '光栅加农'], ['Rock Climb', '攀岩'], ['Defog', '除雾'], ['Trick Room', '欺骗空间'], ['Draco Meteor', '龙星群'], ['Discharge', '放电'], ['Lava Plume', '喷烟'], ['Leaf Storm', '飞叶风暴'], ['Power Whip', '强力鞭挞'], ['Rock Wrecker', '岩石炮'], ['Cross Poison', '毒十字'], ['Gunk Shot', '粉尘射击'], ['Iron Head', '铁头槌'], ['Magnet Bomb', '磁体炸弹'], ['Stone Edge', '石刃'], ['Captivate', '诱惑'], ['Stealth Rock', '秘密岩石'], ['Grass Knot', '草绳结'], ['Chatter', '喋喋不休'], ['Judgment', '制裁之砾'], ['Bug Bite', '虫食'], ['Charge Beam', '充电光线'], ['Wood Hammer', '木锤'], ['Aqua Jet', '水流喷射'], ['Attack Order', '攻击指令'], ['Defend Order', '防御指令'], ['Heal Order', '回复指令'], ['Head Smash', '双刃头槌'], ['Double Hit', '双重攻击'], ['Roar of Time', '时之咆哮'], ['Spacial Rend', '亚空切断'], ['Lunar Dance', '新月之舞'], ['Crush Grip', '捏碎'], ['Magma Storm', '熔岩风暴'], ['Dark Void', '黑洞'], ['Seed Flare', '闪耀种子'], ['Ominous Wind', '妖风'], ['Shadow Force', '影袭'], ['Hone Claws', '磨爪'], ['Wide Guard', '广域防御'], ['Guard Split', '防御平分'], ['Power Split', '力量平分'], ['Wonder Room', '神奇空间'], ['Psyshock', '精神冲击'], ['Venoshock', '毒液冲击'], ['Autotomize', '身体净化'], ['Rage Powder', '愤怒之粉'], ['Telekinesis', '念动力'], ['Magic Room', '魔术空间'], ['Smack Down', '击坠'], ['Storm Throw', '山岚'], ['Flame Burst', '爆裂火焰'], ['Sludge Wave', '淤泥波'], ['Quiver Dance', '蝶之舞'], ['Heavy Slam', '重量炸弹'], ['Synchronoise', '同调噪音'], ['Electro Ball', '电球'], ['Soak', '浸水'], ['Flame Charge', '硝化冲锋'], ['Coil', '盘蜷'], ['Low Sweep', '下旋'], ['Acid Spray', '酸性炸弹'], ['Foul Play', '诈骗'], ['Simple Beam', '单纯光线'], ['Entrainment', '变为同伴'], ['After You', '您先请'], ['Round', '轮唱'], ['Echoed Voice', '回音'], ['Chip Away', '循序渐进'], ['Clear Smog', '净化之雾'], ['Stored Power', '援助力量'], ['Quick Guard', '快速防御'], ['Ally Switch', '位置交换'], ['Scald', '沸水'], ['Shell Smash', '破壳而出'], ['Heal Pulse', '治愈波动'], ['Hex', '厄运'], ['Sky Drop', '自由下落'], ['Shift Gear', '齿轮变换'], ['Circle Throw', '仰投'], ['Incinerate', '燃尽'], ['Quash', '押后'], ['Acrobatics', '杂耍'], ['Reflect Type', '镜面属性'], ['Retaliate', '报仇'], ['Final Gambit', '豁命攻击'], ['Bestow', '传递礼物'], ['Inferno', '炼狱'], ['Water Pledge', '水之誓'], ['Fire Pledge', '火之誓'], ['Grass Pledge', '草之誓'], ['Volt Switch', '闪电交替'], ['Struggle Bug', '虫之抵抗'], ['Bulldoze', '压路'], ['Frost Breath', '冰之吐息'], ['Dragon Tail', '龙之尾'], ['Work Up', '鼓舞士气'], ['Electroweb', '电网'], ['Wild Charge', '野性电击'], ['Drill Run', '钻头直击'], ['Dual Chop', '连环切击'], ['Heart Stamp', '心灵压迫'], ['Horn Leech', '木角'], ['Sacred Sword', '神圣之剑'], ['Razor Shell', '贝壳刃'], ['Heat Crash', '热践踏'], ['Leaf Tornado', '草旋风'], ['Steamroller', '坚硬滚动'], ['Cotton Guard', '棉花防御'], ['Night Daze', '暗夜爆破'], ['Psystrike', '精神破坏'], ['Tail Slap', '扫荡拍打'], ['Hurricane', '暴风'], ['Head Charge', '阿弗罗撞击'], ['Gear Grind', '齿轮飞盘'], ['Searing Shot', '火焰弹'], ['Techno Blast', '科技爆破'], ['Relic Song', '古代之歌'], ['Secret Sword', '神秘之剑'], ['Glaciate', '冰封世界'], ['Bolt Strike', '雷击'], ['Blue Flare', '青色火焰'], ['Fiery Dance', '火焰之舞'], ['Freeze Shock', '冰结电击'], ['Ice Burn', '冰冷闪光'], ['Snarl', '大喊'], ['Icicle Crash', '冰柱坠落'], ['V-create', '创造胜利'], ['Fusion Flare', '交织火焰'], ['Fusion Bolt', '交织闪电'], ['Flying Press', '飞行压制'], ['Mat Block', '叠返'], ['Belch', '打嗝'], ['Rototiller', '耕地'], ['Sticky Web', '黏网'], ['Fell Stinger', '终结针刺'], ['Phantom Force', '幽灵潜袭'], ['Trick-or-Treat', '万圣节捣蛋'], ['Noble Roar', '咆哮'], ['Ion Deluge', '离子倾泻'], ['Parabolic Charge', '抛物式充电'], ['Forest\'s Curse', '森林诅咒'], ['Petal Blizzard', '花吹雪'], ['Freeze-Dry', '冷冻干燥'], ['Disarming Voice', '魅力声音'], ['Parting Shot', '退场台词'], ['Topsy-Turvy', '翻转'], ['Draining Kiss', '吸收之吻'], ['Crafty Shield', '欺诈防御'], ['Flower Shield', '鲜花防御'], ['Grassy Terrain', '绿草场地'], ['Misty Terrain', '迷雾场地'], ['Electrify', '送电'], ['Play Rough', '嬉闹'], ['Fairy Wind', '妖精之风'], ['Moonblast', '月爆'], ['Boomburst', '爆音波'], ['Fairy Lock', '妖精之锁'], ['King\'s Shield', '王者之盾'], ['Play Nice', '好好相处'], ['Confide', '私密话'], ['Diamond Storm', '钻石风暴'], ['Steam Eruption', '蒸汽喷发'], ['Hyperspace Hole', '异次元圆洞'], ['Water Shuriken', '水之手里剑'], ['Mystical Fire', '魔法火焰'], ['Spiky Shield', '棘刺防御'], ['Aromatic Mist', '芳香迷雾'], ['Eerie Impulse', '怪电波'], ['Venom Drench', '毒液陷阱'], ['Powder', '粉尘'], ['Geomancy', '大地控制'], ['Magnetic Flux', '磁场操作'], ['Happy Hour', '开心时间'], ['Electric Terrain', '电流场地'], ['Dazzling Gleam', '魔法闪光'], ['Celebrate', '庆祝'], ['Hold Hands', '手牵手'], ['Baby-Doll Eyes', '可爱目光'], ['Nuzzle', '脸颊磨蹭'], ['Hold Back', '手下留情'], ['Infestation', '虫群缠身'], ['Power-Up Punch', '增强拳'], ['Oblivion Wing', '死亡之翼'], ['Thousand Arrows', '千支箭'], ['Thousand Waves', '千层浪'], ['Land\'s Wrath', '大地原力'], ['Light of Ruin', '毁灭之光'], ['Origin Pulse', '根源波动'], ['Precipice Blades', '断崖之剑'], ['Dragon Ascent', '画龙点睛'], ['Hyperspace Fury', '异次元暴怒']
+    ]
+  };
+
+  translations = [].concat(translations.phases, translations.pokemon, translations.moves);
+
+  translations.sort(function (a, b) {
+    return b[0].length - a[0].length;
+  });
+
+  $('#convert').onclick = function (event) {
+    event.preventDefault();
+    var input  = $('#input').value;
+    var output = input.replace(/<span[^>]+?color:([#\d\w]+).+?>(.+?)<\/span>/g, '[color=$1]$2[/color]') // replace color related span tags
+        .replace(/<b>(.*?)<\/b>/g, '[b]$1[/b]')                                           // replace bold tags
+        .replace(/&apos;/g, '\'')                                                         // convert &apos; to '
+        .replace(/<span.*?>(.*?)<\/span>/g, '$1')                                         // reomve redundant span tags
+        .replace(/<(.+?)>.*?<\/\1>/g, '')                                                 // remove other tags with closing tags & its contents
+        .replace(/<.+?>/g, '')                                                            // remove remaining tags
+        .replace(/(\s){3,}/g, '$1$1')                                                     // remove redundant blank lines
+        .trim();                                                                          // remove redundant head & tail white-spaces
+    for (var i in translations) {
+      output = output.replace(new RegExp(translations[i][0], 'gi'), translations[i][1]);
+    }
+    $('#output').value = output ? '[size=2]' + output + '[/size]' : '';
+  };
+</script>
+</body>
+
+</html>
