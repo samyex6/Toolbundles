@@ -1,39 +1,43 @@
 // ==UserScript==
-// @name        Full
-// @namespace   Gpxplus Hack V2.3
-// @include      http://gpxplus.net/stats/*
-// @version      1
-// @grant        unsafeWindow
+// @name	Full
+// @namespace   Gpxplus Hack V3
+// @include	 https://gpx.plus/stats/*
+// @version	 1
+// @grant	 unsafeWindow
 // ==/UserScript==
+
 var Tools = {
     ajax: function(request, page, log, data, queueobj, callback, error) {
         if (typeof data == 'object') data.currentPage = page;
         $.ajax({
-            url: 'http://gpxplus.net/AJAX/' + request,
+            url: 'https://gpx.plus/AJAX/' + request,
             data: data,
             success: function(i) {
+                if (queueobj.queue) queueobj.queue.dequeue();
                 if (i.userData) Vars.userData = i.userData;
                 if (i.userCard && $("#headerUser").length && $("#headerUser").html() != i.userCard && $("#headerUser").html(i.userCard), i.topNotifications && $("#topNotifications").length && $("#topNotifications").html() != $(i.topNotifications).html() && $("#topNotifications").replaceWith(i.topNotifications), i.headerTime && $("#headerTime").length && $("#headerTime").replaceWith(i.headerTime), "object" == typeof i.notifications) {
                     $(".notification, .notification-text").empty();
                     for (var a in i.notifications)
                         if ("bar" != a) {
                             var r = i.notifications[a];
-                            $("#notification-" + a).html(r.total === !0 ? "&nbsp;" : r.total), $("#notification-" + a + "-text").html(r.text)
+                            $("#notification-" + a).html(r.total === true ? "&nbsp;" : r.total), $("#notification-" + a + "-text").html(r.text)
                         }
                 }
                 if (i.success === 'false') {
-                    Tools.writeLog(log, !1);
+                    Tools.writeLog(log, false);
                     return;
+                }
+                if(i.notifications) {
+                    Vars.notifications = i.notifications;
                 }
                 Gpxplus.responseCheck.perform(i);
                 Tools.writeLog(log);
-                if (i.notifications && i.notifications.mobile) Vars.mobileAvailable = !0;
+                if (i.notifications && i.notifications.mobile) Vars.mobileAvailable = true;
                 if (typeof callback == 'function') callback(i);
-                if (queueobj.queue) queueobj.queue.dequeue();
             },
             timeout: 10000,
             error: function() {
-                Tools.writeLog(log, !1);
+                Tools.writeLog(log, false);
                 if (typeof error == 'function') error();
                 if (queueobj.queue) queueobj.queue.dequeue();
             }
@@ -49,7 +53,7 @@ var Tools = {
             $('#panel-log').val((new Date()).toLocaleString() + ': ' + act + $('#panel-log').val());
             return;
         }
-        var failed = (typeof failed != 'undefined') ? !0 : !1;
+        var failed = typeof failed != 'undefined';
         if (act === 'feeder' || act === 'mobile' || act === 'defog' || act === 'chest' || act === 'pphitem') {
             if (failed) $('#' + act + '-timeout').html(parseInt($('#' + act + '-timeout').html()) + 1);
             else $('#' + act + '-succeed').html(parseInt($('#' + act + '-succeed').html()) + 1);
@@ -63,7 +67,7 @@ var Tools = {
                 };
             }
             obj.queue.dequeue();
-            return !1;
+            return false;
         }
     },
     random: function(min, max) {
@@ -72,15 +76,17 @@ var Tools = {
 };
 var Vars = {};
 var Gpxplus = {
-    __modeProperBerry: !0,
+    __modeProperBerry: false,
     __modeShelter: 'egg',
-    __modeShelterSpecific: !0,
-    __listShelter: 'Mystery,Unown,Articuno,Zapdos,Moltres,Mewtwo,Mew,Raikou,Entei,Suicune,Lugia,Ho-Oh,Celebi,Regirock,Regice,Registeel,Latias,Latios,Kyogre,Groudon,Rayquaza,Jirachi,Deoxys,Uxie,Mesprit,Azelf,Dialga,Palkia,Heatran,Regigigas,Giratina,Cresselia,Manaphy,Darkrai,Shaymin,Arceus,Victini,Cobalion,Terrakion,Virizion,Tornadus,Thundurus,Reshiram,Zekrom,Landorus,Kyurem,Keldeo,Meloetta,Genesect,Xerneas,Yveltal,Zygarde,Diancie,',
-    __listShelterPrio: 'Mystery,Unown,Articuno,Zapdos,Moltres,Mewtwo,Mew,Raikou,Entei,Suicune,Lugia,Ho-Oh,Celebi,Regirock,Regice,Registeel,Latias,Latios,Kyogre,Groudon,Rayquaza,Jirachi,Deoxys,Uxie,Mesprit,Azelf,Dialga,Palkia,Heatran,Regigigas,Giratina,Cresselia,Manaphy,Darkrai,Shaymin,Arceus,Victini,Cobalion,Terrakion,Virizion,Tornadus,Thundurus,Reshiram,Zekrom,Landorus,Kyurem,Keldeo,Meloetta,Genesect,Xerneas,Yveltal,Zygarde,Diancie,',
+    __modeShelterSpecific: true,
+    __listWalkerIgnore: 'Doduo,Spinda,Slakoth,Rattata,Dratini,Gastly,Korechu,Latios,Groudon,Chingling,',
+    __listShelter: 'Spinda,Doduo,Bidofo,Chingling,Mystery,Unown,Articuno,Zapdos,Moltres,Mewtwo,Mew,Raikou,Entei,Suicune,Lugia,Ho-Oh,Celebi,Regirock,Regice,Registeel,Latias,Latios,Kyogre,Groudon,Rayquaza,Jirachi,Deoxys,Uxie,Mesprit,Azelf,Dialga,Palkia,Heatran,Regigigas,Giratina,Cresselia,Manaphy,Darkrai,Shaymin,Arceus,Victini,Cobalion,Terrakion,Virizion,Tornadus,Thundurus,Reshiram,Zekrom,Landorus,Kyurem,Keldeo,Meloetta,Genesect,Xerneas,Yveltal,Zygarde,Diancie,',
+    __listShelterPrio: 'Bidofo,Mystery,Unown,Articuno,Zapdos,Moltres,Mewtwo,Mew,Raikou,Entei,Suicune,Lugia,Ho-Oh,Celebi,Regirock,Regice,Registeel,Latias,Latios,Kyogre,Groudon,Rayquaza,Jirachi,Deoxys,Uxie,Mesprit,Azelf,Dialga,Palkia,Heatran,Regigigas,Giratina,Cresselia,Manaphy,Darkrai,Shaymin,Arceus,Victini,Cobalion,Terrakion,Virizion,Tornadus,Thundurus,Reshiram,Zekrom,Landorus,Kyurem,Keldeo,Meloetta,Genesect,Xerneas,Yveltal,Zygarde,Diancie,',
     __listLab: '4178-y9~hR+,3324-YvAEbT,3399-m6XQNc,3285-ChnT8I,3279-9tBm7W,4044-N9Qtuu,4211-OGHrO9,3725-ZuA3rd,3146-vLj7Tx,2959-R0FzDg,2593-App409,3398-1sSdDh',
-    __numPartySpace: 1,
-    __hatchItemPP: !1,
-    __defogPP: !1,
+    __numPartySpace: 2,
+    __hatchItemPP: false,
+    __defogPP: false,
+    __labSource: 'http://127.0.0.1/bbs/toolbox/Gpxplus-lab-server.php',
     counter: {},
     init: function() {
         if ($('#gpxplus-hack').length < 1) {
@@ -88,18 +94,20 @@ var Gpxplus = {
                 '<tr><td style="border-right:1px solid #999;width:40%;padding:10px" rowspan="2"><b>LOG</b><br>' +
                 'Feeder: <span id="feeder-succeed">0</span> / <span id="feeder-timeout">0</span> / <span id="feeder-queue">0</span><br>' +
                 'Mobile Walker: <span id="mobile-succeed">0</span> / <span id="mobile-timeout">0</span><br>' +
+                'Poke Walker: <span id="walker-succeed">0</span> / <span id="walker-timeout">0</span><br>' +
                 'Defog passpower: <span id="defog-succeed">0</span> / <span id="defog-timeout">0</span><br>' +
                 'Hatch-item passpower: <span id="pphitem-succeed">0</span> / <span id="pphitem-timeout">0</span><br>' +
                 'Pages refreshed: <span id="chest-succeed">0</span> / <span id="chest-timeout">0</span><br>' +
                 '<textarea id="panel-log" rows="10" style="width:100%" disabled></textarea></td>' +
                 '<td style="padding:10px;border-bottom:1px solid #999;height:50px"><b>PARTY</b><br><br><div id="party-image"></div></td></tr>' +
                 '<tr><td style="padding:10px"><b>PANEL</b><br>' +
-                '孵蛋蛋 <input type="button" value="Start" onclick="Gpxplus.startFeature(\'party\', !0)"> <input type="button" value="Stop" onclick="Gpxplus.stopFeature(\'party\')"><br>' +
+                '孵蛋蛋 <input type="button" value="Start" onclick="Gpxplus.startFeature(\'party\', true)"> <input type="button" value="Stop" onclick="Gpxplus.stopFeature(\'party\')"><br>' +
                 '点蛋蛋 <input type="button" value="Start" onclick="Gpxplus.startFeature(\'feeder\', \'random\')"> <input type="button" value="Stop" onclick="Gpxplus.stopFeature(\'feeder\')"> (点击Stop后需要等队列点击完毕才会停止)<br>' +
                 '刷宝箱 <input type="button" value="Start" onclick="Gpxplus.startFeature(\'chest\')"> <input type="button" value="Stop" onclick="Gpxplus.stopFeature(\'chest\')"><br>' +
                 '孤儿院 <input type="button" value="Start" onclick="Gpxplus.startFeature(\'shelter\')"> <input type="button" value="Stop" onclick="Gpxplus.stopFeature(\'shelter\')"><br>' +
                 '实验室 <input type="button" value="Start" onclick="Gpxplus.startFeature(\'lab\')"> <input type="button" value="Stop" onclick="Gpxplus.stopFeature(\'lab\')"><br>' +
                 '电话机 <input type="button" value="Start" onclick="Gpxplus.startFeature(\'mobileWalker\')"> <input type="button" value="Stop" onclick="Gpxplus.stopFeature(\'mobileWalker\')"><br>' +
+                '走路路 <input type="button" value="Start" onclick="Gpxplus.startFeature(\'walker\')"> <input type="button" value="Stop" onclick="Gpxplus.stopFeature(\'walker\')"><br>' +
                 '</table>');
         }
     },
@@ -134,7 +142,7 @@ var Gpxplus = {
                     feeder.process();
                 });
             }, feeder.timer);
- 
+
         },
         process: function() {
             var feeder = this;
@@ -152,7 +160,7 @@ var Gpxplus = {
                                 type: 'feeder'
                             };
                             if ($('#infoInteract div', value).length > 0 && !$('#infoInteract div', value).html().match(/egg/))
-                                data.berry = (Gpxplus.__modeProperBerry && flavorText.length > 0) ? {
+                                data.berry = (Gpxplus.__modeProperBerry && i.notifications.bar.weather.total !== 'foggy' && flavorText.length > 0) ? {
                                     sour: 1,
                                     spicy: 2,
                                     dry: 3,
@@ -170,6 +178,7 @@ var Gpxplus = {
     },
     responseCheck: {
         queue: $('<div></div>'),
+        chestGet: false,
         perform: function(i) {
             var check = this;
             var queuelength = typeof check.queue.queue() !== 'undefined' ? check.queue.queue().length : 0;
@@ -188,10 +197,12 @@ var Gpxplus = {
                 }
             }
             /* Obtain the chest */
-            if (i.topNotifications && $('[class*=SpriteChest], .SpriteOldman, .SpriteSalesman, .SpriteTinyEgg', i.topNotifications).length > 0) {
+            if (!Gpxplus.responseCheck.chestGet && i.topNotifications && $('[class*=SpriteChest], .SpriteOldman, .SpriteSalesman, .SpriteTinyEgg, .SpriteStrangePortal, .SpritePrankster', i.topNotifications).length > 0) {
+                Gpxplus.responseCheck.chestGet = true;
                 Tools.ajax('TopSpecial', 'main', 'chest', {
-                    check: !0
+                    check: true
                 }, check, function(i) {
+                    Gpxplus.responseCheck.chestGet = false;
                     if (!i.msg) return;
                     var msg = i.msg.match(/You obtained a (.+?)\!/);
                     Tools.writeLog(msg && msg[1] ? 'Obtaned a ' + msg[1] + ' from a chest\n' : i.msg + '\n');
@@ -217,13 +228,13 @@ var Gpxplus = {
                 if (!Vars.mobileAvailable) return;
                 Tools.locate();
                 Tools.ajax('MobileWalker', 'main', 'mobile', {
-                    /*longitude: Vars.location.longitude,
-                    latitude: Vars.location.latitude, */
+                    //longitude: Vars.location.longitude, 
+                    //latitude: Vars.location.latitude, 
                     latitude: x[locidx][0],
                     longitude: x[locidx][1],
                     poketch: 'mobile'
                 }, {}, function(i) {
-                    Vars.mobileAvailable = !1;
+                    Vars.mobileAvailable = false;
                     if (i.success == true) {
                         setCookie('locidx', -~-locidx, 2222222);
                     }
@@ -249,16 +260,20 @@ var Gpxplus = {
                     if (i.html) {
                         $('.shelter img', i.html).each(function() {
                             var pokemon = $(this);
-                            if (Vars.userData.pokesLimit.party - Vars.userData.pokes.party - Gpxplus.__numPartySpace <= 0 &&
-                                !Gpxplus.__listShelterPrio.match(((Gpxplus.__modeShelter === 'egg') ? pokemon.data('tooltip').match(/(.+)\sEgg/)[1] : pokemon.data('name')) + ',') ||
-                                Gpxplus.__modeShelterSpecific && !Gpxplus.__listShelter.match(((Gpxplus.__modeShelter === 'egg') ? pokemon.data('tooltip').match(/(.+)\sEgg/)[1] : pokemon.data('name')) + ',')) return;
-                            Vars.userData.pokes.party++;
-                            Tools.ajax('ShelterClaim', 'shelter', 'shelter', {
-                                fname: pokemon.data('fname'),
-                                hash: pokemon.data('hash')
-                            }, shelter, function(i) {
-                                if (i.success) Tools.writeLog('Claimed - ' + pokemon.data('tooltip') + '\n');
-                            });
+                            var remaining = Vars.userData.pokesLimit.party - Vars.userData.pokes.party;
+                            var prioMatched = Gpxplus.__listShelterPrio.match(((Gpxplus.__modeShelter === 'egg') ? pokemon.data('tooltip').match(/(.+)\sEgg/)[1] : pokemon.data('name')) + ',');
+                            var matched = Gpxplus.__listShelter.match(((Gpxplus.__modeShelter === 'egg') ? pokemon.data('tooltip').match(/(.+)\sEgg/)[1] : pokemon.data('name')) + ',');
+                            if (prioMatched && remaining > 0 ||
+                                remaining - Gpxplus.__numPartySpace > 0 && 
+                                    (!Gpxplus.__modeShelterSpecific || Gpxplus.__modeShelterSpecific && matched)) {
+                                Vars.userData.pokes.party++;
+                                Tools.ajax('ShelterClaim', 'shelter', 'shelter', {
+                                    fname: pokemon.data('fname'),
+                                    hash: pokemon.data('hash')
+                                }, shelter, function(i) {
+                                    if (i.success) Tools.writeLog('Claimed - ' + pokemon.data('tooltip') + '\n');
+                                });
+                            }
                         });
                     }
                 });
@@ -341,7 +356,7 @@ var Gpxplus = {
                     });
                     if (eggs) {
                         $.ajax({
-                            url: 'http://www.pokeuniv.com/bbs/toolbox/Gpxplus-lab-server.php',
+                            url: Gpxplus.__labSource,
                             data: {
                                 file: eggs
                             },
@@ -384,19 +399,102 @@ var Gpxplus = {
                 if (chest.queue.queue().length) return;
                 chest.queue.queue(function() {
                     $.ajax({
-                        url: 'http://gpxplus.net/' + chest.pages[Tools.random(0, 6)],
+                        url: 'https://gpx.plus/' + chest.pages[Tools.random(0, 6)],
                         dataType: 'html',
                         success: function() {
                             Tools.writeLog('chest');
                             chest.queue.dequeue();
                         },
                         error: function() {
-                            Tools.writeLog('chest', !1);
+                            Tools.writeLog('chest', false);
                             chest.queue.dequeue();
                         }
                     });
                 });
             }, chest.timer);
+        }
+    },
+    walker: {
+        timer: 10000,
+        queue: $('<div></div>'),
+        start: function() {
+            var walker = this;
+            Gpxplus.counter.walker = setInterval(function() {
+                if(walker.queue.queue().length) return;
+                Tools.ajax('poketch', 'main', 'walker', {
+                    app: 'walker'
+                }, {}, function(i) {
+                    var t = i.notifications;
+                    var fname = $(i.html).find('.PartyPoke.pMovePC').data('fname');
+                    $.ajax({
+                        url: 'https://gpx.plus/pc',
+                        dataType: 'text',
+                        success: function(html) {
+                            var boxes = [], withdrawed = false;
+                            $(html).find('[data-box]').each(function(i, b) {
+                                b = $(b);
+                                boxes[b.data('box')] = {
+                                    pokemon: parseInt(b.find('.pc_box_pokes > span').length),
+                                    name: b.find('.pc_box_name > span').html()
+                                };
+                            });
+
+                            if(t.walker && t.walker.total == 100 && fname) {
+                                for(i in boxes) {
+                                    if(!boxes[i].name.match(/PENDING/) || boxes[i].pokemon >= 24) continue;
+                                    walker.queue.queue(function() {
+                                        Tools.ajax('PokeOptions', 'main', 'walker', {
+                                            option: 'move',
+                                            fname: fname,
+                                            poketch: 'walker',
+                                            data: 'box_' + i
+                                        }, walker, function() {
+                                            Tools.writeLog('Moved walker pokemon ' + fname + ' to box ' + i + '.\n');
+                                        });
+                                        withdrawed = true;
+                                    });
+                                    break;
+                                }
+                            }
+
+                            if(!t.walker || withdrawed) {
+                                var pokes = false;
+                                eval(html.match(/var pokes.+?}}/im)[0]);
+                                if(pokes) {
+                                    var new_pokes = {};
+                                    $.each(pokes, function(f, p) {
+                                        if(!p.poke_id || !p.level || p.level >= 100 || p.loc !== 'PC') return;
+                                        new_pokes[f] = p;
+                                    });
+                                    var sortedIds = Object.keys(new_pokes).sort(function(k1, k2) {
+                                        return new_pokes[k1].poke_id - new_pokes[k2].poke_id;
+                                    });
+                                    $.each(sortedIds, function(i, f) {
+                                        var p = new_pokes[f];
+                                        if(!p.level || p.level >= 100 || p.loc !== 'PC' || Gpxplus.__listWalkerIgnore.indexOf(p.name) !== -1) return;
+                                        walker.queue.queue(function() {
+                                            Tools.ajax('PokeOptions', 'main', 'walker', {
+                                                option: 'move',
+                                                fname: f,
+                                                poketch: 'walker',
+                                                data: 'walker'
+                                            }, walker, function(i) {
+                                                Tools.writeLog('Moved box pokemon ' + f + ' to walker.\n');
+                                            });
+                                        });
+                                        return false;
+                                    });
+                                }
+                            }
+                            
+                            Tools.writeLog('walker');
+                        },
+                        error: function() {
+                            Tools.writeLog('walker', false);
+                        }
+                    });
+                });
+            }, walker.timer);
         }
     },
     stopFeature: function(feature) {
@@ -414,15 +512,15 @@ var Gpxplus = {
         }
     }
 };
- 
+
 if (typeof unsafeWindow !== 'undefined') unsafeWindow.Gpxplus = Gpxplus, unsafeWindow.Vars = Vars, unsafeWindow.Tools = Tools;
- 
+
 Gpxplus.init();
 /*
 Gpxplus.mobileWalker.init();
 Gpxplus.feeder.init(confirm('Online feeder?') ? 'today' : 'random', 1000);
 //Gpxplus.feeder.init('interactions/return', 1000);
-Gpxplus.party.start(!0);
+Gpxplus.party.start(true);
 Gpxplus.shelter.start();
 Gpxplus.lab.start();
 Gpxplus.chest.start();*/
