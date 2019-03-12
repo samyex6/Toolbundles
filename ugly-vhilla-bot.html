@@ -44,7 +44,7 @@
                     s('FMA in ' + diff + ' seconds! Cleanse!');
                 } else if (diff <= 0) {
                     let n = resetFMA();
-                    s('Boom! The next FMA happens at ' + n.min + ':' + n.sec);
+                    s('Boom! The next FMA happens at ' + n.min + ' ' + n.sec);
                 }
                 $('#info').html('FMA in ' + diff + ' seconds! (at ' + fmaAt.min + ':' + fmaAt.sec + ')');
             }, 1000);
