@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ugly VHilla bot</title>
+    <meta charset="utf-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/915932/articulate.min.js"></script>
+</head>
+<body>
+    Her HP range:<br>
+    <input type="radio" name="hp-range" value="0" checked> initial<br>
+    <input type="radio" name="hp-range" value="1"> P2 below 35%<br>
+    <input type="radio" name="hp-range" value="2"> P3 below 20%<br>
+
+    <button id="start">Start fight</button>
+    <button id="reset-fma">Reset FMA</button>
+
+    <div id="info"></div>
+ 
+    <script>
+        // roughly every 2min 32secs (starting from phase 2 30%~40% hp: 2min 2sec, starting from phase 3 20% hp: 1min 40sec
+        let s  = (c) => $('<div>' + c + '</div>').articulate('speak');
+        let ts = (min, sec) => min * 60 + sec;
+        let d  = (ts) => ({min: Math.floor(ts / 60), sec: ts % 60});
+        let fmaIntervals = [ts(2, 32), ts(2, 2), ts(1, 40)];
+        let timer   = null;
+        let counter = ts(30, 0);
+        let nextFMA = -1;
+        let resetFMA = () => {
+            let intervalPhase = parseInt($('input[name="hp-range"]:checked').val());
+            let fmaInterval = fmaIntervals[intervalPhase];
+            nextFMA = counter - fmaInterval;
+            return d(nextFMA);
+        };
+        $('#start').click(() => {
+            s('Battle begins! Fuck that bitch.');
+            timer = setInterval(() => {
+                counter--;
+                if (nextFMA === -1) 
+                    nextFMA = ts(27, 12);
+                let diff = counter - nextFMA;
+                let fmaAt = d(nextFMA);
+                if (diff === 30 || diff === 10) {
+                    s('FMA in ' + diff + ' seconds! Cleanse!');
+                } else if (diff <= 0) {
+                    let n = resetFMA();
+                    s('Boom! The next FMA happens at ' + n.min + ':' + n.sec);
+                }
+                $('#info').html('FMA in ' + diff + ' seconds! (at ' + fmaAt.min + ':' + fmaAt.sec + ')');
+            }, 1000);
+            $(this).hide();
+        });
+        $('#reset-fma').click(resetFMA);
+    </script>
+</body>
+</html>
