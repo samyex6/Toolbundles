@@ -22,20 +22,24 @@
     <div id="info"></div>
 
     <script>
-        console.log($().articulate('getVoices'));
-        let s  = (c) => $('<div>' + c + '</div>').articulate('setVoice', 'language', 'en').articulate('speak');
-        let counter = 70;
-        let resetFMA = () => counter = 70;
+        let s  			= (c) => $('<div>' + c + '</div>').articulate('setVoice', 'language', 'en').articulate('speak');
+        let counter 	= 70;
+        let resetFMA 	= () => counter = 70;
+		let getRandName = () => ['Pahfey', 'Lansley'][Math.floor(Math.random() * 2)];
+
         $('#start').click(() => {
-            s('Phase 2 begins! Pafey no pp.');
+            s('Phase 2 begins! XL gang XL wayn');
             timer = setInterval(() => {
                 counter--;
-                if (counter === 10) {
+				if (counter === 40) {
+                    s(getRandName() + ' no pp');
+				} else if (counter === 15) {
                     s('FMA in ' + counter + ' seconds! Stay mid!');
                 } else if (counter <= 0) {
                     resetFMA();
                     s('Run!!!');
                 }
+				$('#info').html('Next FMA happens in ' + counter + ' secs.');
             }, 1000);
             $('#start').hide();
         });
