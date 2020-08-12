@@ -22,7 +22,7 @@
 
     <script>
         // roughly every 2min 32secs (starting from phase 2 30%~40% hp: 2min 2sec, starting from phase 3 20% hp: 1min 40sec
-        let s  = (c) => $('<div>' + c + '</div>').articulate('speak');
+        let s  = (c) => $('<div>' + c + '</div>').articulate('setVoice', 'language', 'en-GB').articulate('speak');
         let counter = 70;
         let resetFMA = () => counter = 70;
         $('#start').click(() => {
